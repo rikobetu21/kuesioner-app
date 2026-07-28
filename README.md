@@ -1,45 +1,336 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Aplikasi Kuesioner Online dengan Google OAuth
 
-## Getting Started
+## Deskripsi Proyek
 
-First, run the development server:
+Aplikasi ini merupakan sistem kuesioner online yang dibangun menggunakan **Next.js**, **TypeScript**, **Prisma ORM**, dan **PostgreSQL**. Sistem memungkinkan pengguna untuk mengisi kuesioner secara online, sedangkan administrator dapat mengakses dashboard admin untuk melihat hasil kuesioner, ringkasan data, serta mengunduh hasil yang telah dikumpulkan.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Pada tugas ini telah dilakukan implementasi autentikasi menggunakan **Google OAuth** melalui **Auth.js (NextAuth)** sehingga hanya pengguna dengan akun Google tertentu yang dapat mengakses halaman administrator.
+
+---
+
+# Tujuan
+
+Tujuan pengembangan aplikasi ini adalah:
+
+- Membangun sistem kuesioner berbasis web menggunakan Next.js.
+- Mengimplementasikan autentikasi menggunakan Google OAuth.
+- Melindungi halaman administrator dari akses pengguna yang tidak memiliki hak akses.
+- Mengelola data kuesioner secara aman menggunakan PostgreSQL dan Prisma ORM.
+
+---
+
+# Fitur Aplikasi
+
+## Halaman Pengguna
+
+- Mengisi kuesioner online
+- Mengirim jawaban kuesioner
+- Validasi data input
+- Penyimpanan data ke database PostgreSQL
+
+## Halaman Administrator
+
+- Login menggunakan akun Google
+- Menampilkan informasi akun administrator
+- Dashboard admin
+- Ringkasan hasil kuesioner
+- Download hasil kuesioner
+- Logout
+
+---
+
+# Implementasi Google OAuth
+
+Autentikasi dilakukan menggunakan **Auth.js (NextAuth v5)** dengan provider Google.
+
+Proses autentikasi adalah sebagai berikut:
+
+1. Pengguna membuka halaman admin.
+2. Sistem mengarahkan pengguna ke halaman Login Google.
+3. Pengguna memilih akun Google.
+4. Google melakukan proses autentikasi.
+5. Setelah berhasil login, Auth.js membuat session pengguna.
+6. Sistem memeriksa apakah email pengguna termasuk dalam daftar administrator (`ADMIN_EMAILS`).
+7. Jika email terdaftar sebagai admin, pengguna dapat mengakses dashboard.
+8. Jika email tidak terdaftar, akses akan ditolak.
+
+---
+
+# Hak Akses Administrator
+
+Hak akses administrator dibatasi menggunakan variabel environment berikut:
+
+```
+ADMIN_EMAILS
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Contoh:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+ADMIN_EMAILS=admin@gmail.com,dosen@gmail.com
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Hanya email yang terdaftar pada variabel tersebut yang dapat mengakses halaman:
 
-## Learn More
+```
+/admin
+```
 
-To learn more about Next.js, take a look at the following resources:
+serta endpoint API administrator.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Proteksi Halaman
 
-## Deploy on Vercel
+Halaman administrator dilindungi menggunakan Middleware Auth.js.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Halaman yang diproteksi:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+/admin
+```
 
-## Environment Variables
+Pengguna yang belum login akan diarahkan menuju proses autentikasi Google.
 
-- DATABASE_URL : koneksi database PostgreSQL.
-- GOOGLE_CLIENT_ID : Client ID dari Google OAuth.
-- GOOGLE_CLIENT_SECRET : Client Secret dari Google OAuth.
-- AUTH_SECRET : Secret yang digunakan Auth.js/NextAuth untuk session.
-- AUTH_URL : URL aplikasi.
-- ADMIN_EMAILS : daftar email admin yang diperbolehkan mengakses dashboard admin.
+---
+
+# Proteksi API
+
+Endpoint administrator juga diproteksi sehingga hanya administrator yang telah login yang dapat mengakses data.
+
+Contoh endpoint:
+
+- /api/admin/export
+- /api/admin/summary
+- /api/admin/submissions/[id]/file
+
+Jika pengguna belum login maka sistem akan mengembalikan:
+
+```
+401 Unauthorized
+```
+
+Jika pengguna login tetapi bukan administrator maka sistem mengembalikan:
+
+```
+403 Forbidden
+```
+
+---
+
+# Teknologi yang Digunakan
+
+- Next.js 16
+- React 19
+- TypeScript
+- Auth.js (NextAuth v5)
+- Google OAuth
+- Prisma ORM
+- PostgreSQL
+- Tailwind CSS
+- Node.js
+
+---
+
+# Struktur Proyek
+
+```
+app/
+│
+├── admin/
+│      page.tsx
+│
+├── api/
+│      admin/
+│      auth/
+│      submit/
+│      questions/
+│
+├── globals.css
+├── layout.tsx
+└── page.tsx
+
+src/
+│
+├── components/
+├── lib/
+└── generated/
+
+prisma/
+│
+├── schema.prisma
+└── migrations/
+
+public/
+
+auth.ts
+middleware.ts
+```
+
+---
+
+# Konfigurasi Environment
+
+Buat file `.env` berdasarkan file `.env.example`.
+
+Contoh:
+
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
+
+GOOGLE_CLIENT_ID="YOUR_GOOGLE_CLIENT_ID"
+
+GOOGLE_CLIENT_SECRET="YOUR_GOOGLE_CLIENT_SECRET"
+
+AUTH_SECRET="YOUR_SECRET"
+
+AUTH_URL="http://localhost:3000"
+
+ADMIN_EMAILS="admin@gmail.com,dosen@gmail.com"
+```
+
+---
+
+# Instalasi
+
+Clone repository
+
+```
+git clone https://github.com/USERNAME/kuesioner-app.git
+```
+
+Masuk ke folder project
+
+```
+cd kuesioner-app
+```
+
+Install dependency
+
+```
+npm install
+```
+
+Generate Prisma Client
+
+```
+npx prisma generate
+```
+
+Migrasi database
+
+```
+npx prisma migrate dev
+```
+
+Menjalankan aplikasi
+
+```
+npm run dev
+```
+
+Aplikasi akan berjalan pada:
+
+```
+http://localhost:3000
+```
+
+---
+
+# Cara Penggunaan
+
+## Pengguna
+
+1. Membuka halaman utama.
+2. Mengisi seluruh pertanyaan.
+3. Mengirim jawaban.
+4. Data tersimpan ke database.
+
+## Administrator
+
+1. Membuka halaman:
+
+```
+/admin
+```
+
+2. Login menggunakan akun Google.
+
+3. Sistem memverifikasi email administrator.
+
+4. Jika email sesuai, dashboard admin akan ditampilkan.
+
+5. Administrator dapat melihat ringkasan data.
+
+6. Administrator dapat mengunduh hasil kuesioner.
+
+7. Administrator dapat melakukan logout.
+
+---
+
+# Perubahan yang Dilakukan
+
+Implementasi yang ditambahkan pada tugas ini meliputi:
+
+✅ Menambahkan autentikasi menggunakan Google OAuth.
+
+✅ Menambahkan konfigurasi Auth.js (NextAuth v5).
+
+✅ Membuat file `auth.ts`.
+
+✅ Menambahkan route autentikasi:
+
+```
+/api/auth/[...nextauth]
+```
+
+✅ Menambahkan Middleware untuk melindungi halaman administrator.
+
+✅ Menambahkan whitelist email administrator menggunakan variabel `ADMIN_EMAILS`.
+
+✅ Menambahkan informasi akun administrator pada dashboard.
+
+✅ Menambahkan tombol Logout.
+
+✅ Melindungi endpoint API administrator menggunakan session Auth.js.
+
+✅ Menambahkan file `.env.example` sebagai contoh konfigurasi environment.
+
+---
+
+# Screenshot Implementasi
+
+Dokumentasi implementasi meliputi:
+
+1. Halaman Login Google
+2. Dashboard Administrator
+3. Login menggunakan akun non-admin
+4. Halaman setelah Logout
+
+---
+
+# Hasil
+
+Implementasi Google OAuth berhasil diterapkan pada aplikasi.
+
+Pengguna umum hanya dapat mengakses halaman kuesioner, sedangkan halaman administrator hanya dapat diakses oleh akun Google yang telah terdaftar sebagai administrator.
+
+Selain itu, endpoint API administrator juga telah diproteksi sehingga meningkatkan keamanan aplikasi.
+
+---
+
+# Author
+
+**Fransiskus Xaverius Endriko Betu**
+
+Program Studi Sistem Informasi
+
+Universitas Merdeka Malang
+
+Semester 7
+
+---
+
+# Lisensi
+
+Project ini dibuat untuk memenuhi tugas Ujian Akhir Semester (UAS) mata kuliah Pengembangan Aplikasi Web dan digunakan hanya untuk keperluan akademik.
